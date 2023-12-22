@@ -1,0 +1,51 @@
+{
+  "self": "https://api.atlassian.com/ex/jira/2c4db73f-3b84-45f0-8227-5ea9e43b6db9/rest/api/3/project/search?expand=description%2Curl&maxResults=50&startAt=0",
+  "maxResults": 50,
+  "startAt": 0,
+  "total": 2,
+  "isLast": true,
+  "values": [
+    {
+      "expand": "description,lead,issueTypes,url,projectKeys,permissions,insight",
+      "self": "https://api.atlassian.com/ex/jira/2c4db73f-3b84-45f0-8227-5ea9e43b6db9/rest/api/3/project/10001",
+      "id": "10001",
+      "key": "SP",
+      "description": "",
+      "name": "second-project",
+      "avatarUrls": {
+        "48x48": "https://api.atlassian.com/ex/jira/2c4db73f-3b84-45f0-8227-5ea9e43b6db9/rest/api/3/universal_avatar/view/type/project/avatar/10413",
+        "24x24": "https://api.atlassian.com/ex/jira/2c4db73f-3b84-45f0-8227-5ea9e43b6db9/rest/api/3/universal_avatar/view/type/project/avatar/10413?size=small",
+        "16x16": "https://api.atlassian.com/ex/jira/2c4db73f-3b84-45f0-8227-5ea9e43b6db9/rest/api/3/universal_avatar/view/type/project/avatar/10413?size=xsmall",
+        "32x32": "https://api.atlassian.com/ex/jira/2c4db73f-3b84-45f0-8227-5ea9e43b6db9/rest/api/3/universal_avatar/view/type/project/avatar/10413?size=medium"
+      },
+      "projectTypeKey": "software",
+      "simplified": true,
+      "style": "next-gen",
+      "isPrivate": false,
+      "properties": {},
+      "entityId": "2fa1ff36-24c4-48b6-b20b-d929ac9eba38",
+      "uuid": "2fa1ff36-24c4-48b6-b20b-d929ac9eba38"
+    },
+    {
+      "expand": "description,lead,issueTypes,url,projectKeys,permissions,insight",
+      "self": "https://api.atlassian.com/ex/jira/2c4db73f-3b84-45f0-8227-5ea9e43b6db9/rest/api/3/project/10000",
+      "id": "10000",
+      "key": "TPB",
+      "description": "",
+      "name": "Test Project Board",
+      "avatarUrls": {
+        "48x48": "https://api.atlassian.com/ex/jira/2c4db73f-3b84-45f0-8227-5ea9e43b6db9/rest/api/3/universal_avatar/view/type/project/avatar/10409",
+        "24x24": "https://api.atlassian.com/ex/jira/2c4db73f-3b84-45f0-8227-5ea9e43b6db9/rest/api/3/universal_avatar/view/type/project/avatar/10409?size=small",
+        "16x16": "https://api.atlassian.com/ex/jira/2c4db73f-3b84-45f0-8227-5ea9e43b6db9/rest/api/3/universal_avatar/view/type/project/avatar/10409?size=xsmall",
+        "32x32": "https://api.atlassian.com/ex/jira/2c4db73f-3b84-45f0-8227-5ea9e43b6db9/rest/api/3/universal_avatar/view/type/project/avatar/10409?size=medium"
+      },
+      "projectTypeKey": "software",
+      "simplified": true,
+      "style": "next-gen",
+      "isPrivate": false,
+      "properties": {},
+      "entityId": "7a4f6445-03e4-4434-98d7-11d5045a5b6f",
+      "uuid": "7a4f6445-03e4-4434-98d7-11d5045a5b6f"
+    }
+  ]
+}

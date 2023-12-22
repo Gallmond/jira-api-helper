@@ -4,19 +4,20 @@ import {
     TokensExpiredError,
     TokensRequiredError,
 } from '../errors/error.js'
-import { allTruthy, isArray, isString, throwIf } from '../utils/utils.js'
+import { allTruthy, throwIf } from '../utils/utils.js'
 
 type ApiConfig = {
   clientId: string;
   secret: string;
   redirectUri: string;
-  tokenSetter: (token: string) => void;
-  tokenGetter: () => string;
+  tokenSetter: (token: TokensResponse) => void;
+  tokenGetter: () => TokensResponse;
   autoRefresh?: boolean;
 };
 
 class API {
     private urls = {
+        api: 'https://api.atlassian.com/ex/jira',
         authorize: 'https://auth.atlassian.com/authorize',
         tokens: 'https://auth.atlassian.com/oauth/token',
         sites: 'https://api.atlassian.com/oauth/token/accessible-resources',
@@ -24,24 +25,33 @@ class API {
 
     private jsonHeaders = {'content-type': 'application/json', accept: 'application/json'}
 
-    private _tokens: TokensResponse | null = null
+    // private _tokens: TokensResponse | null = null
     /**
    * @throws {TokensRequiredError} tokens have not been set
    * @throws {TokensExpiredError} tokens are expired
    */
     private get tokens(): TokensResponse {
-        // are the tokens missing?
-        throwIf(!this._tokens, () => new TokensRequiredError())
+        // attempt to get the tokens from the user-provided getter
+        const providedTokens = this.config.tokenGetter()
 
-        const tokens = this._tokens as TokensResponse
+        // are the tokens missing?
+        throwIf(!providedTokens, () => new TokensRequiredError())
 
         // are the tokens expired?
         const now = new Date()
-        const validUntil = tokens.valid_until
+        const validUntil = providedTokens.valid_until
         
         throwIf(now > validUntil, () => new TokensExpiredError())
 
-        return tokens
+        return providedTokens
+    }
+
+    private set tokens(value: TokensResponse){
+        this.config.tokenSetter(value)
+    }
+
+    private getApiUrl = (siteId: string): string => {
+        return `${this.urls.api}/${siteId}/rest/api/3`
     }
 
     constructor(
@@ -64,7 +74,7 @@ class API {
     }
 
     refreshAuthTokens = async (): Promise<TokensResponse> =>
-        this._tokensRequest('refresh', (this._tokens as TokensResponse).refresh_token)
+        this._tokensRequest('refresh', this.tokens.refresh_token)
 
     getAuthTokens = async (code: string): Promise<TokensResponse> =>
         this._tokensRequest('auth', code)
@@ -100,6 +110,43 @@ class API {
         }
     }
     
+    listIssues = async (siteId: string, projectKey: string, startAt: number = 0, maxResults: number = 50): Promise<void> => {
+        const headers = await this.getAuthorisationHeadersWithRefresh()
+
+        const params = new URLSearchParams({
+            startAt: startAt.toString(),
+            maxResults: maxResults.toString(),
+            // expand: 'description,url'
+            'jql': `project=${projectKey}`
+        })
+
+        const url = `${this.getApiUrl(siteId)}/search?${params.toString()}`
+
+        const res = await this.fetcher(url, {method: 'GET', headers})
+        
+        throwIf(!res.ok, () => new APIRequestError('Failed to get issues', res))
+
+        return await res.json()
+    }
+
+    listProjects = async (siteId: string, startAt: number = 0, maxResults: number = 50): Promise<API_Paginate<API_ProjectListingResponse>> => {
+        const headers = await this.getAuthorisationHeadersWithRefresh()
+
+        const params = new URLSearchParams({
+            startAt: startAt.toString(),
+            maxResults: maxResults.toString(),
+            expand: 'description,url'
+        })
+
+        const url = `${this.getApiUrl(siteId)}/project/search?${params.toString()}`
+
+        const res = await this.fetcher(url, {method: 'GET', headers})
+        
+        throwIf(!res.ok, () => new APIRequestError('Failed to get projects', res))
+
+        return await res.json() as API_Paginate<API_ProjectListingResponse>
+    }
+
     listSites = async (): Promise<API_SitesResponse> => {
         const headers = await this.getAuthorisationHeadersWithRefresh()
 
@@ -107,19 +154,7 @@ class API {
 
         throwIf(!res.ok, () => new APIRequestError('Failed to get sites', res))
 
-        const json = await res.json()
-
-        // assert that the format of the response matches API_SitesResponse
-        throwIf(!Array.isArray(json), () => new APIRequestError('Sites response was not an Array', res))
-        
-        for(const site of json){
-            throwIf(!(
-                isString(site.id, site.url, site.name, site.avatarUrl) &&
-                isArray(site.scopes, 'string')
-            ), () => new APIRequestError('Sites response was not valid shape', res))
-        }
-
-        return json
+        return await res.json() as API_SitesResponse
     }
 
     private _tokensRequest = async (
@@ -168,7 +203,7 @@ class API {
         )
 
         // set and return new tokens
-        return (this._tokens = {
+        return (this.tokens = {
             access_token: access_token,
             refresh_token: refresh_token,
             expires_in: expires_in,

@@ -1,0 +1,12 @@
+[
+  {
+    "id": "2c4db73f-3b84-45f0-8227-5ea9e43b6db9",
+    "url": "https://gallmond.atlassian.net",
+    "name": "gallmond",
+    "scopes": [
+      "read:jira-work",
+      "read:jira-user"
+    ],
+    "avatarUrl": "https://site-admin-avatar-cdn.prod.public.atl-paas.net/avatars/240/star.png"
+  }
+]
