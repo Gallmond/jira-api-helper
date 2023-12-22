@@ -31,17 +31,14 @@ class API {
    * @throws {TokensExpiredError} tokens are expired
    */
     private get tokens(): TokensResponse {
-        // attempt to get the tokens from the user-provided getter
         const providedTokens = this.config.tokenGetter()
 
-        // are the tokens missing?
         throwIf(!providedTokens, () => new TokensRequiredError())
 
-        // are the tokens expired?
-        const now = new Date()
-        const validUntil = providedTokens.valid_until
-        
-        throwIf(now > validUntil, () => new TokensExpiredError())
+        throwIf(
+            new Date() > providedTokens.valid_until,
+            () => new TokensExpiredError()
+        )
 
         return providedTokens
     }
@@ -86,32 +83,22 @@ class API {
      */
     private async getAuthorisationHeadersWithRefresh(): Promise<{authorization: string, accept: string, 'content-type': string}> {
         try {
-            const accessToken = this.tokens.access_token
             return {
-                authorization: `Bearer ${accessToken}`,
+                authorization: `Bearer ${this.tokens.access_token}`,
                 ...this.jsonHeaders
             }
         }catch(e) {
-            /**
-             * If the tokens are expired and config allows auto-refresh, do so.
-             * 
-             * Otherwise throw the error for user to handle (e.g. the user needs
-             * to re-auth)
-             */
-            if(e instanceof TokensExpiredError && this.config.autoRefresh) {
-                const accessToken = (await this.refreshAuthTokens()).access_token
-                return {
-                    authorization: `Bearer ${accessToken}`,
-                    ...this.jsonHeaders
-                }
+            if(!(e instanceof TokensExpiredError) || this.config.autoRefresh) throw e
+
+            return {
+                authorization: `Bearer ${(await this.refreshAuthTokens()).access_token}`,
+                ...this.jsonHeaders
             }
-            
-            throw e
         }
     }
     
     listIssues = async (siteId: string, projectKey: string, startAt: number = 0, maxResults: number = 50): Promise<void> => {
-        const headers = await this.getAuthorisationHeadersWithRefresh()
+        const path = '/search'
 
         const params = new URLSearchParams({
             startAt: startAt.toString(),
@@ -120,9 +107,13 @@ class API {
             'jql': `project=${projectKey}`
         })
 
-        const url = `${this.getApiUrl(siteId)}/search?${params.toString()}`
+        const method = 'GET'
+        const headers = await this.getAuthorisationHeadersWithRefresh()
 
-        const res = await this.fetcher(url, {method: 'GET', headers})
+        const res = await this.fetcher(
+            `${this.getApiUrl(siteId)}${path}?${params.toString()}`,
+            {method, headers}
+        )
         
         throwIf(!res.ok, () => new APIRequestError('Failed to get issues', res))
 
@@ -130,7 +121,7 @@ class API {
     }
 
     listProjects = async (siteId: string, startAt: number = 0, maxResults: number = 50): Promise<API_Paginate<API_ProjectListingResponse>> => {
-        const headers = await this.getAuthorisationHeadersWithRefresh()
+        const path = '/project/search'
 
         const params = new URLSearchParams({
             startAt: startAt.toString(),
@@ -138,9 +129,13 @@ class API {
             expand: 'description,url'
         })
 
-        const url = `${this.getApiUrl(siteId)}/project/search?${params.toString()}`
+        const method = 'GET'
+        const headers = await this.getAuthorisationHeadersWithRefresh()
 
-        const res = await this.fetcher(url, {method: 'GET', headers})
+        const res = await this.fetcher(
+            `${this.getApiUrl(siteId)}${path}?${params.toString()}`,
+            {method, headers}
+        )
         
         throwIf(!res.ok, () => new APIRequestError('Failed to get projects', res))
 
@@ -148,9 +143,13 @@ class API {
     }
 
     listSites = async (): Promise<API_SitesResponse> => {
+        const method = 'GET'
         const headers = await this.getAuthorisationHeadersWithRefresh()
 
-        const res = await this.fetcher(this.urls.sites, {method: 'GET', headers})
+        const res = await this.fetcher(
+            this.urls.sites, 
+            {method, headers}
+        )
 
         throwIf(!res.ok, () => new APIRequestError('Failed to get sites', res))
 
