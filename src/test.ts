@@ -106,7 +106,7 @@ const run = async () => {
 
     const projects = projectsPaginate.values as API_ProjectListingResponse[]
     for(const project of projects){
-        const issues = await a.listIssues(siteId, project.key)
+        const issues = await a.listProjectIssues(siteId, project.key)
         console.log('test, got issues', {issues, stringified: JSON.stringify(issues, null, 2)})
         DEBUG_write('issues-example', issues)
     }

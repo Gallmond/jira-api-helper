@@ -16,16 +16,15 @@ type ApiConfig = {
 };
 
 class API {
+    private jsonHeaders = {'content-type': 'application/json', accept: 'application/json'}
+    
     private urls = {
         api: 'https://api.atlassian.com/ex/jira',
         authorize: 'https://auth.atlassian.com/authorize',
-        tokens: 'https://auth.atlassian.com/oauth/token',
         sites: 'https://api.atlassian.com/oauth/token/accessible-resources',
+        tokens: 'https://auth.atlassian.com/oauth/token',
     }
 
-    private jsonHeaders = {'content-type': 'application/json', accept: 'application/json'}
-
-    // private _tokens: TokensResponse | null = null
     /**
    * @throws {TokensRequiredError} tokens have not been set
    * @throws {TokensExpiredError} tokens are expired
@@ -47,10 +46,6 @@ class API {
         this.config.tokenSetter(value)
     }
 
-    private getApiUrl = (siteId: string): string => {
-        return `${this.urls.api}/${siteId}/rest/api/3`
-    }
-
     constructor(
         private config: ApiConfig,
         private fetcher: FetchInterface = fetch,
@@ -70,34 +65,11 @@ class API {
         return `${this.urls.authorize}?${params.toString()}`
     }
 
-    refreshAuthTokens = async (): Promise<TokensResponse> =>
-        this._tokensRequest('refresh', this.tokens.refresh_token)
+    refreshAuthTokens = async (): Promise<TokensResponse> => this.tokensRequest('refresh', this.tokens.refresh_token)
 
-    getAuthTokens = async (code: string): Promise<TokensResponse> =>
-        this._tokensRequest('auth', code)
+    getAuthTokens = async (code: string): Promise<TokensResponse> => this.tokensRequest('auth', code)
 
-    /**
-     * @returns {Promise<{authorization: string, accept: 'application/json', 'content-type': 'application/json'}>}
-     * @throws {TokensExpiredError} tokens are expired and config does not allow auto-refresh
-     * @throws {TokensRequiredError} tokens are missing
-     */
-    private async getAuthorisationHeadersWithRefresh(): Promise<{authorization: string, accept: string, 'content-type': string}> {
-        try {
-            return {
-                authorization: `Bearer ${this.tokens.access_token}`,
-                ...this.jsonHeaders
-            }
-        }catch(e) {
-            if(!(e instanceof TokensExpiredError) || this.config.autoRefresh) throw e
-
-            return {
-                authorization: `Bearer ${(await this.refreshAuthTokens()).access_token}`,
-                ...this.jsonHeaders
-            }
-        }
-    }
-    
-    listIssues = async (siteId: string, projectKey: string, startAt: number = 0, maxResults: number = 50): Promise<void> => {
+    listProjectIssues = async (siteId: string, projectKey: string, startAt: number = 0, maxResults: number = 50): Promise<void> => {
         const path = '/search'
 
         const params = new URLSearchParams({
@@ -156,7 +128,30 @@ class API {
         return await res.json() as API_SitesResponse
     }
 
-    private _tokensRequest = async (
+    private getApiUrl = (siteId: string): string => `${this.urls.api}/${siteId}/rest/api/3`
+
+    /**
+     * @returns {Promise<{authorization: string, accept: 'application/json', 'content-type': 'application/json'}>}
+     * @throws {TokensExpiredError} tokens are expired and config does not allow auto-refresh
+     * @throws {TokensRequiredError} tokens are missing
+     */
+    private getAuthorisationHeadersWithRefresh = async (): Promise<{authorization: string, accept: string, 'content-type': string}> => {
+        try {
+            return {
+                authorization: `Bearer ${this.tokens.access_token}`,
+                ...this.jsonHeaders
+            }
+        }catch(e) {
+            if(!(e instanceof TokensExpiredError) || !this.config.autoRefresh) throw e
+
+            return {
+                authorization: `Bearer ${(await this.refreshAuthTokens()).access_token}`,
+                ...this.jsonHeaders
+            }
+        }
+    }
+
+    private tokensRequest = async (
         type: 'auth' | 'refresh',
         codeOrRefreshToken: string,
     ): Promise<TokensResponse> => {
