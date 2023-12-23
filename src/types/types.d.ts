@@ -95,7 +95,7 @@ type API_IssueListingResponse = {
         project: API_ProjectListingResponse
         parent?: API_IssueListingResponse
         issuetype: API_IssueType
-        description: string | null
+        description: string | null // appears this isn't used for issues?
         summary: string
         created: string
         updated: string
