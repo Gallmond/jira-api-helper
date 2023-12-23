@@ -1,28 +1,42 @@
 # Example
 
+see local linking: https://docs.npmjs.com/cli/v10/commands/npm-link
+See Gallmond/jira-api-frontent
+
+## TODO
+- Auth
+    - Can auth user
+    - Can get tokens
+    - Can refresh tokens
+- Sites
+- Projects
+    - key, name, id
+- Issues
+    - key, summary, id, status, sub-issue count
+    - description
+    - comments
+    - reporter, assignee, attachments
+    - subtasks: key, id, summary, status (subissue count not available on the initial subissues, have to re-fetch)
+
+
 ```ts
-// initialise
-const api = API({
-    clientId: 'your-client-id',
-    secret: 'your-client-secret',
-    redirectUri: 'https://yourdomain.com/auth-return',
-    tokenSetter: (tokens: TokensResponse ) => cookies.set('auth_token', token),
-    tokenGetter: () => cookies.get('auth_token'),
-    autoRefresh: true,
-})
+// on-page structure like so. Keeps it flat and we can use the API to populate as we go
 
-// get the user auth url
-const state = 'some random string'
-const url = api.getAuthUrl(state)
-
-// user authorises and we come back with the url
-const tokens = await api.getAuthTokens(code, state)
-cookies.set('access_tokens', tokens.access_token)
-
-// if autoRefresh is true, it will automatically try to refresh expired tokens
-// but you can do it manually
-const tokens = await api.refreshAuthTokens()
-
+const issues = {
+    'GC-1000' : {
+        fetched: new Date().valueOf(), // the timestamp that the on-page data was last updated
+        summary: 'foo bar',
+        id: 1234,
+        status: 'To Do',
+        subtasks: ['GC-2000']
+    }
+    'GC-2000' : {
+        summary: 'This is a sub task summary',
+        id: 5678,
+        status: 'Done',
+        subtasks: []
+    }
+}
 
 
 ```
